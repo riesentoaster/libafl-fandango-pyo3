@@ -2,12 +2,13 @@
 
 This will allow you to run [Fandango](https://github.com/fandango-fuzzer/fandango) as a [LibAFL](https://github.com/aflplusplus/libafl) Generator, Mutator, or Executor.
 
-It works by calling a python script using the [PyO3 interpreter](https://pyo3.rs). That script is expected to implement three functions (here with example implementations):
+It works by internally calling a python script using the [PyO3 interpreter](https://pyo3.rs). That script is expected to implement three functions. Here is the default implementation, but you can provide your own (using `FandangoPythonModule::with_custom_python_interface`):
 
 ```python
 import os
 from typing import Any
 from fandango import Fandango
+
 
 
 class FandangoWrapper:
@@ -36,7 +37,7 @@ def parse_input(wrapper: FandangoWrapper, input: bytes) -> int:
 Look at [the example](./examples/run_fandango.rs) for how to use the Rust interface to run Fandango. Run it using the following:
 
 ```bash
-cargo run --example run_fandango --release -- --python-interface-path examples/run_fandango.py --fandango-file  examples/even_numbers.fan
+cargo run --example run_fandango --release -- --fandango-file  examples/even_numbers.fan
 ```
 
 ### Using it in a fuzzer
@@ -58,6 +59,6 @@ cargo run --example baby_fuzzer_differential --release
 ## Known issues
 For some reason, PyO3 struggles with matching the python interpreter to the one used in the shell – specifically when it comes to imports of dependencies. You may need to manually set the python path environment variable:
 
-```
+```bash
 export PYTHONPATH=$(echo .venv/lib/python*/site-packages)
 ```

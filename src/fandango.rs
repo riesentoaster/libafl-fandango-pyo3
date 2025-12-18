@@ -20,13 +20,31 @@ pub enum FandangoPythonModuleInitError {
 
 impl FandangoPythonModule {
     pub fn new(
-        path: &str,
         fandango_file: &str,
         kwargs: &[(&str, &str)],
     ) -> Result<Self, FandangoPythonModuleInitError> {
-        let code = Self::read_code(path)?;
-        let (file_name, file_name_str) = Self::sanitize_file_name(path)?;
-        let module_name = Self::sanitize_module_name(path, file_name_str)?;
+        let path_of_default_interface = Path::new(file!())
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("examples/run_fandango.py");
+
+        Self::with_custom_python_interface(
+            path_of_default_interface.to_str().unwrap(),
+            fandango_file,
+            kwargs,
+        )
+    }
+
+    pub fn with_custom_python_interface(
+        python_interface_path: &str,
+        fandango_file: &str,
+        kwargs: &[(&str, &str)],
+    ) -> Result<Self, FandangoPythonModuleInitError> {
+        let code = Self::read_code(python_interface_path)?;
+        let (file_name, file_name_str) = Self::sanitize_file_name(python_interface_path)?;
+        let module_name = Self::sanitize_module_name(python_interface_path, file_name_str)?;
 
         Python::with_gil(|py| {
             let module = PyModule::from_code(py, &code, &file_name, &module_name)

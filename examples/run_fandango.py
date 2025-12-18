@@ -1,9 +1,6 @@
 import os
 from typing import Any
 from fandango import Fandango
-import random
-
-random.seed(0)
 
 
 class FandangoWrapper:

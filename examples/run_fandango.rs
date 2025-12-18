@@ -5,8 +5,6 @@ use libafl_fandango_pyo3::fandango::{FandangoPythonModule, FandangoPythonModuleI
 #[command(name = "run_fandango")]
 #[command(about = "Run the fandango interface in Python")]
 struct Args {
-    #[arg(short, long, default_value = "examples/run_fandango.py")]
-    python_interface_path: String,
     #[arg(short, long, default_value = "examples/even_numbers.fan")]
     fandango_file: String,
 }
@@ -14,11 +12,7 @@ struct Args {
 fn main() -> Result<(), String> {
     let args = Args::parse();
 
-    let fandango = match FandangoPythonModule::new(
-        &args.python_interface_path,
-        &args.fandango_file,
-        &[],
-    ) {
+    let fandango = match FandangoPythonModule::new(&args.fandango_file, &[]) {
         Ok(fandango) => fandango,
         Err(FandangoPythonModuleInitError::PyErr(e)) => {
             return Err(format!(

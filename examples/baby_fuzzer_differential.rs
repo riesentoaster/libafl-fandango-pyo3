@@ -39,8 +39,6 @@ use libafl_fandango_pyo3::{
 #[command(name = "run_fandango")]
 #[command(about = "Run the fandango interface in Python")]
 struct Args {
-    #[arg(short, long, default_value = "examples/run_fandango.py")]
-    python_interface_path: String,
     #[arg(short, long, default_value = "examples/even_numbers_parse.fan")]
     fandango_file: String,
     #[arg(short, long, value_parser = Cores::from_cmdline, default_value = "all")]
@@ -58,7 +56,7 @@ pub fn main() -> Result<(), String> {
 
     // Generate one Generator to ensure the interpreter is ready
     if let Err(FandangoPythonModuleInitError::PyErr(e)) =
-        FandangoPythonModule::new(&args.python_interface_path, &args.fandango_file, &[])
+        FandangoPythonModule::new(&args.fandango_file, &[])
     {
         return Err(format!(
             "You may need to set the PYTHONPATH environment variable to the path of the Python interpreter, e.g. `export PYTHONPATH=$(echo .venv/lib/python*/site-packages)`. Underlying error: {:?}",
@@ -185,8 +183,7 @@ pub fn main() -> Result<(), String> {
         .expect("Failed to create the Executor");
 
         let fandango_executor = FandangoParseExecutor::new(
-            FandangoPythonModule::new(&args.python_interface_path, &args.fandango_file, &[])
-                .unwrap(),
+            FandangoPythonModule::new(&args.fandango_file, &[]).unwrap(),
             is_divisible_by_2_observer_fandango.handle(),
             tuple_list!(
                 is_divisible_by_2_observer_fandango,
