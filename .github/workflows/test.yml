@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  run-readme-commands:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -25,10 +25,14 @@ jobs:
       - name: Build Library
         run: cargo build --release
 
-      - name: Run README commands
+      - name: Run Libary
+        run: cargo run --release --example run_fandango -- --fandango-file examples/even_numbers.fan
+
+      - name: Run examples commands
         run: |
           set -euo pipefail
 
+          # These examples run indefinitely, so we timeout them
           run_with_timeout() {
             local seconds="$1"
             shift
@@ -46,9 +50,7 @@ jobs:
             fi
           }
 
-          # Adjust per-command timeout (seconds) as needed
-          run_with_timeout 30 cargo run --example run_fandango --release -- --fandango-file examples/even_numbers.fan
-          run_with_timeout 30 cargo run --example baby_fuzzer_generator --release
-          run_with_timeout 30 cargo run --example baby_fuzzer_mutator --release
-          run_with_timeout 30 cargo run --example baby_fuzzer_differential --release
+          run_with_timeout 30 cargo run --release --cores all --example baby_fuzzer_generator
+          run_with_timeout 30 cargo run --release --cores all --example baby_fuzzer_mutator
+          run_with_timeout 30 cargo run --release --cores all --example baby_fuzzer_differential
 
