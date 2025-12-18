@@ -50,7 +50,7 @@ jobs:
             fi
           }
 
-          run_with_timeout 30 cargo run --release --cores all --example baby_fuzzer_generator
-          run_with_timeout 30 cargo run --release --cores all --example baby_fuzzer_mutator
-          run_with_timeout 30 cargo run --release --cores all --example baby_fuzzer_differential
+          run_with_timeout 30 cargo run --release --example baby_fuzzer_generator
+          run_with_timeout 30 cargo run --release --example baby_fuzzer_mutator
+          run_with_timeout 30 cargo run --release --example baby_fuzzer_differential
 
