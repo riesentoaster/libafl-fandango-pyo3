@@ -4,7 +4,7 @@ version = "0.3.0"
 authors = ["Valentin Huber <contact@valentinhuber.com>"]
 license = "MIT"
 repository = "https://github.com/riesentoaster/libafl-fandango-pyo3"
-description = "A library for running Fandango as in LibAFL using PyO3"
+description = "A library for running Fandango in LibAFL using PyO3"
 edition = "2024"
 readme = "README.md"
 
