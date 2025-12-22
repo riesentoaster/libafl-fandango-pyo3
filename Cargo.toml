@@ -29,13 +29,13 @@ name = "baby_fuzzer_stage"
 path = "examples/baby_fuzzer_stage.rs"
 
 [dev-dependencies]
-clap = { version = "4.5.43", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 env_logger = "0.11.8"
 hexdump = "0.1.2"
-log = "0.4.27"
+log = "0.4.29"
 
 [dependencies]
-libafl = "0.15.3"
-libafl_bolts = "0.15.3"
+libafl = "0.15.4"
+libafl_bolts = "0.15.4"
 pyo3 = { version = "0.25.1", features = ["auto-initialize"] }
-serde = { version = "1.0.219", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }

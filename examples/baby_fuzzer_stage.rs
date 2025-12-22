@@ -36,6 +36,8 @@ struct Args {
     cores: Cores,
     #[arg(short, long, default_value = "false")]
     print_inputs: bool,
+    #[arg(short, long, default_value = "false")]
+    quiet: bool,
     #[arg(short, long)]
     iters: Option<u64>,
     #[arg(short, long, default_value = "false")]
@@ -55,9 +57,10 @@ pub fn main() -> Result<(), String> {
     };
 
     let monitor = MultiMonitor::new(|s| {
-        if !args.print_inputs {
-            println!("{s}")
+        if args.print_inputs || args.quiet {
+            return;
         }
+        println!("{s}")
     });
 
     let shmem_provider = StdShMemProvider::new().expect("Failed to init shared memory");
