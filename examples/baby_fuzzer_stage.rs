@@ -9,9 +9,8 @@ use libafl::{
     fuzzer::{Fuzzer, StdFuzzer},
     inputs::{BytesInput, HasTargetBytes},
     monitors::MultiMonitor,
-    nonzero,
+    mutators::{HavocScheduledMutator, havoc_mutations_no_crossover},
     schedulers::QueueScheduler,
-    stages::StdMutationalStage,
     state::{HasCorpus, StdState},
 };
 use libafl_bolts::{
@@ -24,7 +23,7 @@ use libafl_bolts::{
 };
 use libafl_fandango_pyo3::{
     fandango::{FandangoPythonModule, FandangoPythonModuleInitError},
-    libafl::FandangoPseudoMutator,
+    libafl::FandangoPostMutationalStage,
 };
 
 #[derive(Parser)]
@@ -55,7 +54,11 @@ pub fn main() -> Result<(), String> {
         }
     };
 
-    let monitor = MultiMonitor::new(|s| println!("{s}"));
+    let monitor = MultiMonitor::new(|s| {
+        if !args.print_inputs {
+            println!("{s}")
+        }
+    });
 
     let shmem_provider = StdShMemProvider::new().expect("Failed to init shared memory");
 
@@ -120,16 +123,25 @@ pub fn main() -> Result<(), String> {
         )
         .expect("Failed to create the Executor");
 
-        let mutator = FandangoPseudoMutator::new(
-            FandangoPythonModule::new(&args.fandango_file, &[]).unwrap(),
-        );
+        let fandango_module = FandangoPythonModule::new(&args.fandango_file, &[]).unwrap();
 
-        let mut stages = tuple_list!(StdMutationalStage::with_max_iterations(
-            mutator,
-            nonzero!(1) // this is important, we don't want to call fandango multiple times between target invocations
+        // Number of times to clone and mutate each fandango-produced input (both inclusive)
+        let min_iterations = 25;
+        let max_iterations = 50;
+
+        // Mutator to apply to each fandango-produced input — for simplicity's sake without crossover here, but you can also havoc crossover from your corpus
+        let post_mutator =
+            HavocScheduledMutator::with_max_stack_pow(havoc_mutations_no_crossover(), 3);
+
+        let mut stages = tuple_list!(FandangoPostMutationalStage::new(
+            fandango_module,
+            post_mutator,
+            min_iterations,
+            max_iterations,
         ));
 
         // the fuzzer needs one initial input, otherwise the scheduler (obviously) isn't happy
+        // in this example, this will never be used or mutated
         state
             .corpus_mut()
             .add(Testcase::new(BytesInput::new(b"42".to_vec())))?;

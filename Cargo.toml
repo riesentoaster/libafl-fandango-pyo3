@@ -24,9 +24,14 @@ path = "examples/baby_fuzzer_differential.rs"
 name = "baby_fuzzer_mutator"
 path = "examples/baby_fuzzer_mutator.rs"
 
+[[example]]
+name = "baby_fuzzer_stage"
+path = "examples/baby_fuzzer_stage.rs"
+
 [dev-dependencies]
 clap = { version = "4.5.43", features = ["derive"] }
 env_logger = "0.11.8"
+hexdump = "0.1.2"
 log = "0.4.27"
 
 [dependencies]

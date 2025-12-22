@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use libafl::{
     corpus::{InMemoryCorpus, OnDiskCorpus},
-    events::{EventConfig, Launcher},
+    events::{EventConfig, Launcher, LlmpRestartingEventManager, SendExiting as _},
     executors::{ExitKind, InProcessExecutor},
     feedbacks::CrashFeedback,
     fuzzer::{Evaluator, StdFuzzer},
@@ -33,22 +33,26 @@ struct Args {
     fandango_file: String,
     #[arg(short, long, value_parser = Cores::from_cmdline, default_value = "all")]
     cores: Cores,
-}
-
-static VIOLENT_CRASH: bool = true;
-
-fn crash() -> ExitKind {
-    if VIOLENT_CRASH {
-        panic!("Violent crash");
-    } else {
-        ExitKind::Crash
-    }
+    #[arg(short, long, default_value = "false")]
+    print_inputs: bool,
+    #[arg(short, long, default_value_t = u64::MAX)]
+    iters: u64,
+    #[arg(short, long, default_value = "false")]
+    violent_crash: bool,
 }
 
 pub fn main() -> Result<(), String> {
     env_logger::init();
 
     let args = Args::parse();
+
+    let crash = || {
+        if args.violent_crash {
+            panic!("Violent crash");
+        } else {
+            ExitKind::Crash
+        }
+    };
 
     let monitor = MultiMonitor::new(|s| println!("{s}"));
 
@@ -64,7 +68,9 @@ pub fn main() -> Result<(), String> {
         ));
     }
 
-    let mut run_client = |state: Option<_>, mut restarting_mgr, _client_description| {
+    let mut run_client = |state: Option<_>,
+                          mut restarting_mgr: LlmpRestartingEventManager<_, _, _, _, _>,
+                          _client_description| {
         log::info!("Running client");
 
         let mut generator =
@@ -114,7 +120,7 @@ pub fn main() -> Result<(), String> {
         )
         .expect("Failed to create the Executor");
 
-        loop {
+        for _ in 0..args.iters {
             let input = match generator.generate(&mut fuzzer) {
                 Ok(input) => input,
                 Err(e) => {
@@ -122,10 +128,14 @@ pub fn main() -> Result<(), String> {
                     continue;
                 }
             };
+            if args.print_inputs {
+                hexdump::hexdump(&input.target_bytes());
+            }
             fuzzer
                 .evaluate_input(&mut state, &mut executor, &mut restarting_mgr, &input)
                 .unwrap();
         }
+        restarting_mgr.on_shutdown()
     };
 
     match Launcher::builder()

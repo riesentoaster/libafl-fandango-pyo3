@@ -5,7 +5,7 @@ use clap::Parser;
 use libafl::{
     HasMetadata,
     corpus::{Corpus, InMemoryCorpus, OnDiskCorpus, Testcase},
-    events::{EventConfig, Launcher},
+    events::{EventConfig, Launcher, LlmpRestartingEventManager, SendExiting as _},
     executors::{DiffExecutor, ExitKind, InProcessExecutor},
     feedback_or_fast,
     feedbacks::{
@@ -43,6 +43,10 @@ struct Args {
     fandango_file: String,
     #[arg(short, long, value_parser = Cores::from_cmdline, default_value = "all")]
     cores: Cores,
+    #[arg(short, long, default_value = "false")]
+    print_inputs: bool,
+    #[arg(short, long)]
+    iters: Option<u64>,
 }
 
 pub fn main() -> Result<(), String> {
@@ -64,7 +68,9 @@ pub fn main() -> Result<(), String> {
         ));
     }
 
-    let mut run_client = |state: Option<_>, mut restarting_mgr, _client_description| {
+    let mut run_client = |state: Option<_>,
+                          mut restarting_mgr: LlmpRestartingEventManager<_, _, _, _, _>,
+                          _client_description| {
         log::info!("Running client");
 
         let mut pseudo_coverage_map = vec![0; 9];
@@ -136,6 +142,9 @@ pub fn main() -> Result<(), String> {
         let mut harness = |input: &BytesInput| {
             update_coverage(0);
             let target = input.target_bytes().to_vec();
+            if args.print_inputs {
+                hexdump::hexdump(&target);
+            }
             let number = match String::from_utf8(target) {
                 Ok(number) => {
                     update_coverage(1);
@@ -202,7 +211,14 @@ pub fn main() -> Result<(), String> {
             .corpus_mut()
             .add(Testcase::new(BytesInput::new(b"42".to_vec())))?;
 
-        fuzzer.fuzz_loop(&mut stages, &mut executor, &mut state, &mut restarting_mgr)
+        if let Some(iters) = args.iters {
+            for _ in 0..iters {
+                fuzzer.fuzz_one(&mut stages, &mut executor, &mut state, &mut restarting_mgr)?;
+            }
+            restarting_mgr.on_shutdown()
+        } else {
+            fuzzer.fuzz_loop(&mut stages, &mut executor, &mut state, &mut restarting_mgr)
+        }
     };
 
     match Launcher::builder()
