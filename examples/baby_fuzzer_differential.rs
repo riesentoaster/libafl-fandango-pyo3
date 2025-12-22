@@ -22,7 +22,7 @@ use libafl::{
     state::{HasCorpus, StdState},
 };
 use libafl_bolts::{
-    Error, ErrorBacktrace, Named, SerdeAny,
+    Error, Named, SerdeAny,
     core_affinity::Cores,
     current_nanos,
     ownedref::OwnedRef,
@@ -288,16 +288,14 @@ where
     ) -> Result<(), Error> {
         let fan = *observers
             .get(&self.is_divisible_by_2_observer_fandango)
-            .ok_or(Error::IllegalState(
+            .ok_or(Error::illegal_state(
                 "is_divisible_by_2_observer_fandango not found".to_string(),
-                ErrorBacktrace::new(),
             ))?
             .get_ref();
         let harness = *observers
             .get(&self.is_divisible_by_2_observer_harness)
-            .ok_or(Error::IllegalState(
+            .ok_or(Error::illegal_state(
                 "is_divisible_by_2_observer_harness not found".to_string(),
-                ErrorBacktrace::new(),
             ))?
             .get_ref();
         testcase.add_metadata(LogMetadata { fan, harness });

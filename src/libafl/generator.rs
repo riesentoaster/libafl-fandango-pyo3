@@ -1,5 +1,4 @@
 use libafl::{Error, generators::Generator, inputs::BytesInput};
-use libafl_bolts::ErrorBacktrace;
 
 use crate::fandango::FandangoPythonModule;
 
@@ -18,7 +17,7 @@ impl<S> Generator<BytesInput, S> for FandangoGenerator {
         let input = self
             .fandango
             .next_input()
-            .map_err(|e| Error::IllegalState(e.to_string(), ErrorBacktrace::new()))?;
+            .map_err(|e| Error::illegal_state(e.to_string()))?;
         Ok(input.into())
     }
 }

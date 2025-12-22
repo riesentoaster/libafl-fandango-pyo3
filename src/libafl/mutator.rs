@@ -6,7 +6,7 @@ use libafl::{
     inputs::BytesInput,
     mutators::{MutationResult, Mutator},
 };
-use libafl_bolts::{ErrorBacktrace, Named};
+use libafl_bolts::Named;
 
 use crate::fandango::FandangoPythonModule;
 
@@ -25,7 +25,7 @@ impl<S> Mutator<BytesInput, S> for FandangoPseudoMutator {
         let new_input = self
             .fandango
             .next_input()
-            .map_err(|e| Error::IllegalState(e.to_string(), ErrorBacktrace::new()))?;
+            .map_err(|e| Error::illegal_state(e.to_string()))?;
         *input = BytesInput::new(new_input);
         Ok(MutationResult::Mutated)
     }

@@ -8,7 +8,7 @@ use libafl::{
     stages::{Restartable, RetryCountRestartHelper, Stage},
     state::HasRand,
 };
-use libafl_bolts::{ErrorBacktrace, Named, rands::Rand as _};
+use libafl_bolts::{Named, rands::Rand as _};
 
 use crate::fandango::FandangoPythonModule;
 
@@ -59,7 +59,7 @@ where
         let input: ValueInput<Vec<u8>> = self
             .fandango
             .next_input()
-            .map_err(|e| Error::IllegalState(e.to_string(), ErrorBacktrace::new()))?
+            .map_err(|e| Error::illegal_state(e.to_string()))?
             .into();
 
         let iterations = 1 + state

@@ -4,10 +4,7 @@ use libafl::{
     inputs::{BytesInput, HasTargetBytes as _},
     observers::RefCellValueObserver,
 };
-use libafl_bolts::{
-    ErrorBacktrace,
-    tuples::{Handle, MatchNameRef, RefIndexable},
-};
+use libafl_bolts::tuples::{Handle, MatchNameRef, RefIndexable};
 
 use crate::fandango::FandangoPythonModule;
 
@@ -45,13 +42,12 @@ where
         let num_parses = self
             .fandango
             .parse_input(&input.target_bytes())
-            .map_err(|e| Error::IllegalState(e.to_string(), ErrorBacktrace::new()))?;
+            .map_err(|e| Error::illegal_state(e.to_string()))?;
 
         self.observers
             .get_mut(&self.num_parses_observer)
-            .ok_or(Error::IllegalState(
+            .ok_or(Error::illegal_state(
                 "num_parses_observer not found".to_string(),
-                ErrorBacktrace::new(),
             ))?
             .set(num_parses);
         Ok(ExitKind::Ok)
