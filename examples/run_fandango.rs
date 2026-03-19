@@ -9,15 +9,22 @@ struct Args {
     fandango_file: String,
 }
 
-fn main() -> Result<(), String> {
+fn main() {
+    if let Err(err) = run() {
+        eprintln!("{err}");
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<(), String> {
     let args = Args::parse();
 
     let fandango = match FandangoPythonModule::new(&args.fandango_file, &[]) {
         Ok(fandango) => fandango,
-        Err(FandangoPythonModuleInitError::PyErr(e)) => {
+        Err(FandangoPythonModuleInitError::ModuleNotFoundError(e, tb)) => {
             return Err(format!(
-                "You may need to set the PYTHONPATH environment variable to the path of the Python interpreter, e.g. `export PYTHONPATH=$(echo .venv/lib/python*/site-packages)`. Underlying error: {:?}",
-                e
+                "A required Python module was not found. You may need to set the PYTHONPATH environment variable to the path of the Python interpreter, e.g. `export PYTHONPATH=$(echo .venv/lib/python*/site-packages)`. Underlying error:\n{}\n{}",
+                e, tb
             ));
         }
         Err(e) => {

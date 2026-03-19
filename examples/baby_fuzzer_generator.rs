@@ -42,8 +42,14 @@ struct Args {
     #[arg(short, long, default_value = "false")]
     violent_crash: bool,
 }
+pub fn main() {
+    if let Err(err) = run() {
+        eprintln!("{err}");
+        std::process::exit(1);
+    }
+}
 
-pub fn main() -> Result<(), String> {
+fn run() -> Result<(), String> {
     env_logger::init();
 
     let args = Args::parse();
@@ -66,12 +72,12 @@ pub fn main() -> Result<(), String> {
     let shmem_provider = StdShMemProvider::new().expect("Failed to init shared memory");
 
     // Generate one Generator to ensure the interpreter is ready
-    if let Err(FandangoPythonModuleInitError::PyErr(e)) =
+    if let Err(FandangoPythonModuleInitError::ModuleNotFoundError(e, tb)) =
         FandangoPythonModule::new(&args.fandango_file, &[])
     {
         return Err(format!(
-            "You may need to set the PYTHONPATH environment variable to the path of the Python interpreter, e.g. `export PYTHONPATH=$(echo .venv/lib/python*/site-packages)`. Underlying error: {:?}",
-            e
+            "A required Python module was not found. You may need to set the PYTHONPATH environment variable to the path of the Python interpreter, e.g. `export PYTHONPATH=$(echo .venv/lib/python*/site-packages)`. Underlying error:\n{}\n{}",
+            e, tb,
         ));
     }
 

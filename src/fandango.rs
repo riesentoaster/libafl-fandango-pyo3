@@ -3,7 +3,7 @@ use std::{
     path::Path,
 };
 
-use pyo3::{prelude::*, types::PyDict};
+use pyo3::{exceptions::PyModuleNotFoundError, prelude::*, types::PyDict};
 
 pub struct FandangoPythonModule {
     module: Py<PyModule>,
@@ -12,13 +12,42 @@ pub struct FandangoPythonModule {
 
 #[derive(Debug)]
 pub enum FandangoPythonModuleInitError {
-    PyErr(PyErr),
+    ModuleNotFoundError(PyErr, String),
+    PyErr(PyErr, String),
     FilePathError(String),
     ReadFileError(String),
     EncodingError(NulError),
 }
 
 impl FandangoPythonModule {
+    fn format_py_traceback(py: Python<'_>, err: &PyErr) -> Option<String> {
+        let traceback_module = py.import("traceback").ok()?;
+        let formatted = traceback_module
+            .call_method1(
+                "format_exception",
+                (err.get_type(py), err.value(py), err.traceback(py)),
+            )
+            .ok()?;
+        let lines = formatted.extract::<Vec<String>>().ok()?;
+        Some(lines.concat())
+    }
+
+    fn map_py_init_error(py: Python<'_>, err: PyErr) -> FandangoPythonModuleInitError {
+        let tb = Self::format_py_traceback(py, &err);
+        if err
+            .matches(py, py.get_type::<PyModuleNotFoundError>())
+            .unwrap_or(false)
+            && let Some(tb) = tb
+        {
+            FandangoPythonModuleInitError::ModuleNotFoundError(err, tb)
+        } else {
+            FandangoPythonModuleInitError::PyErr(
+                err,
+                tb.unwrap_or("No traceback available".to_string()),
+            )
+        }
+    }
+
     pub fn new(
         fandango_file: &str,
         kwargs: &[(&str, &str)],
@@ -48,7 +77,7 @@ impl FandangoPythonModule {
 
         Python::with_gil(|py| {
             let module = PyModule::from_code(py, &code, &file_name, &module_name)
-                .map_err(FandangoPythonModuleInitError::PyErr)?;
+                .map_err(|err| Self::map_py_init_error(py, err))?;
             let module: Py<PyModule> = module.into();
 
             let wrapped_kwargs = PyDict::new(py);
@@ -58,17 +87,17 @@ impl FandangoPythonModule {
 
             let generator = module
                 .getattr(py, "setup")
-                .map_err(FandangoPythonModuleInitError::PyErr)?
+                .map_err(|err| Self::map_py_init_error(py, err))?
                 .call1(py, (fandango_file, wrapped_kwargs))
-                .map_err(FandangoPythonModuleInitError::PyErr)?;
+                .map_err(|err| Self::map_py_init_error(py, err))?;
 
             // check if next_input and parse_input are defined
             module
                 .getattr(py, "next_input")
-                .map_err(FandangoPythonModuleInitError::PyErr)?;
+                .map_err(|err| Self::map_py_init_error(py, err))?;
             module
                 .getattr(py, "parse_input")
-                .map_err(FandangoPythonModuleInitError::PyErr)?;
+                .map_err(|err| Self::map_py_init_error(py, err))?;
 
             Ok(Self { module, generator })
         })
