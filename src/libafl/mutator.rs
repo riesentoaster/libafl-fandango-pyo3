@@ -8,19 +8,19 @@ use libafl::{
 };
 use libafl_bolts::Named;
 
-use crate::fandango::FandangoPythonModule;
+use crate::fandango::FandangoClient;
 
-pub struct FandangoPseudoMutator {
-    fandango: FandangoPythonModule,
+pub struct FandangoPseudoMutator<F> {
+    fandango: F,
 }
 
-impl FandangoPseudoMutator {
-    pub fn new(fandango: FandangoPythonModule) -> Self {
+impl<F> FandangoPseudoMutator<F> {
+    pub fn new(fandango: F) -> Self {
         Self { fandango }
     }
 }
 
-impl<S> Mutator<BytesInput, S> for FandangoPseudoMutator {
+impl<F: FandangoClient, S> Mutator<BytesInput, S> for FandangoPseudoMutator<F> {
     fn mutate(&mut self, _state: &mut S, input: &mut BytesInput) -> Result<MutationResult, Error> {
         let new_input = self
             .fandango
@@ -35,7 +35,7 @@ impl<S> Mutator<BytesInput, S> for FandangoPseudoMutator {
     }
 }
 
-impl Named for FandangoPseudoMutator {
+impl<F> Named for FandangoPseudoMutator<F> {
     fn name(&self) -> &Cow<'static, str> {
         &Cow::Borrowed("FandangoPseudoMutator")
     }

@@ -22,7 +22,7 @@ use libafl_bolts::{
     tuples::tuple_list,
 };
 use libafl_fandango_pyo3::{
-    fandango::{FandangoPythonModule, FandangoPythonModuleInitError},
+    fandango::{FandangoInprocessModule, FandangoModuleInitError},
     libafl::FandangoPostMutationalStage,
 };
 
@@ -74,8 +74,8 @@ fn run() -> Result<(), String> {
 
     // Generate one Generator to ensure the interpreter is ready
 
-    if let Err(FandangoPythonModuleInitError::ModuleNotFoundError(e, tb)) =
-        FandangoPythonModule::new(&args.fandango_file, &[])
+    if let Err(FandangoModuleInitError::ModuleNotFoundError(e, tb)) =
+        FandangoInprocessModule::new(&args.fandango_file, &[])
     {
         return Err(format!(
             "A required Python module was not found. You may need to set the PYTHONPATH environment variable to the path of the Python interpreter, e.g. `export PYTHONPATH=$(echo .venv/lib/python*/site-packages)`. Underlying error:\n{}\n{}",
@@ -134,7 +134,7 @@ fn run() -> Result<(), String> {
         )
         .expect("Failed to create the Executor");
 
-        let fandango_module = FandangoPythonModule::new(&args.fandango_file, &[]).unwrap();
+        let fandango_module = FandangoInprocessModule::new(&args.fandango_file, &[]).unwrap();
 
         // Number of times to clone and mutate each fandango-produced input (both inclusive)
         let min_iterations = 25;

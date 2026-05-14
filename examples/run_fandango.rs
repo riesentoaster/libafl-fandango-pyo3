@@ -1,5 +1,7 @@
 use clap::Parser;
-use libafl_fandango_pyo3::fandango::{FandangoPythonModule, FandangoPythonModuleInitError};
+use libafl_fandango_pyo3::fandango::{
+    FandangoClient as _, FandangoInprocessModule, FandangoModuleInitError,
+};
 
 #[derive(Parser)]
 #[command(name = "run_fandango")]
@@ -19,9 +21,9 @@ fn main() {
 fn run() -> Result<(), String> {
     let args = Args::parse();
 
-    let fandango = match FandangoPythonModule::new(&args.fandango_file, &[]) {
+    let mut fandango = match FandangoInprocessModule::new(&args.fandango_file, &[]) {
         Ok(fandango) => fandango,
-        Err(FandangoPythonModuleInitError::ModuleNotFoundError(e, tb)) => {
+        Err(FandangoModuleInitError::ModuleNotFoundError(e, tb)) => {
             return Err(format!(
                 "A required Python module was not found. You may need to set the PYTHONPATH environment variable to the path of the Python interpreter, e.g. `export PYTHONPATH=$(echo .venv/lib/python*/site-packages)`. Underlying error:\n{}\n{}",
                 e, tb

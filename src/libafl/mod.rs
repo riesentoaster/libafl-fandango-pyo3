@@ -1,7 +1,7 @@
-pub mod executor;
-pub mod generator;
-pub mod mutator;
-pub mod stage;
+pub(crate) mod executor;
+pub(crate) mod generator;
+pub(crate) mod mutator;
+pub(crate) mod stage;
 
 pub use executor::FandangoParseExecutor;
 pub use generator::FandangoGenerator;

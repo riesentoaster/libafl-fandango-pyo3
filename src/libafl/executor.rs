@@ -6,17 +6,17 @@ use libafl::{
 };
 use libafl_bolts::tuples::{Handle, MatchNameRef, RefIndexable};
 
-use crate::fandango::FandangoPythonModule;
+use crate::fandango::FandangoClient;
 
-pub struct FandangoParseExecutor<'a, OT> {
-    fandango: FandangoPythonModule,
+pub struct FandangoParseExecutor<'a, OT, F> {
+    fandango: F,
     num_parses_observer: Handle<RefCellValueObserver<'a, u32>>,
     observers: OT,
 }
 
-impl<'a, OT> FandangoParseExecutor<'a, OT> {
+impl<'a, OT, F> FandangoParseExecutor<'a, OT, F> {
     pub fn new(
-        fandango: FandangoPythonModule,
+        fandango: F,
         num_parses_observer: Handle<RefCellValueObserver<'a, u32>>,
         observers: OT,
     ) -> Self {
@@ -28,9 +28,10 @@ impl<'a, OT> FandangoParseExecutor<'a, OT> {
     }
 }
 
-impl<'a, EM, OT, S, Z> Executor<EM, BytesInput, S, Z> for FandangoParseExecutor<'a, OT>
+impl<'a, EM, OT, S, Z, F> Executor<EM, BytesInput, S, Z> for FandangoParseExecutor<'a, OT, F>
 where
     OT: MatchNameRef,
+    F: FandangoClient,
 {
     fn run_target(
         &mut self,
@@ -54,7 +55,7 @@ where
     }
 }
 
-impl<'a, OT> HasObservers for FandangoParseExecutor<'a, OT>
+impl<'a, OT, F> HasObservers for FandangoParseExecutor<'a, OT, F>
 where
     OT: MatchNameRef,
 {

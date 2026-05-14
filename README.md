@@ -2,10 +2,21 @@
 
 This will allow you to run [Fandango](https://github.com/fandango-fuzzer/fandango) as a [LibAFL](https://github.com/aflplusplus/libafl) Generator, Mutator, Stage, or Executor.
 
-It works by internally calling a python script using the [PyO3 interpreter](https://pyo3.rs). That script is expected to implement three functions. Here is the default implementation, but you can provide your own (using `FandangoPythonModule::with_custom_python_interface`):
+It works by internally loading a Python module with [PyO3](https://pyo3.rs). That module is expected to expose `setup`, `next_input`, and `parse_input` (see the default script under `examples/run_fandango.py`).
+
+## In-process vs subprocess
+
+- **`FandangoInprocessModule`** runs the interpreter in the same OS process as your fuzzer. It is faster and simpler. A hard failure in Python (for example OOM) can take down the whole fuzzer.
+
+- **`FandangoSubprocessModule`** spawns a worker using your executable with a special `argv` flag and runs Python only in that child. If the child dies, the parent gets an error instead of crashing. When you are done, call **`shutdown()`** for a clean exit; dropping the value also tears down the worker (with a short graceful wait, then `SIGKILL` if needed). Check out [`examples/baby_fuzzer_generator`](./examples/baby_fuzzer_generator.rs) for an example.
+
+Both types accept the same default interface path at compile time (`examples/run_fandango.py` relative to this crate) or a custom path via **`with_custom_python_interface`**.
+
+## Python interface
+
+Here is the shape of the default implementation; you can point either module type at your own script with `with_custom_python_interface`:
 
 ```python
-import os
 from typing import Any
 from fandango import Fandango
 
@@ -37,29 +48,30 @@ def parse_input(wrapper: FandangoWrapper, input: bytes) -> int:
 Look at [the example](./examples/run_fandango.rs) for how to use the Rust interface to run Fandango. Run it using the following:
 
 ```bash
-cargo run --example run_fandango --release -- --fandango-file  examples/even_numbers.fan
+cargo run --example run_fandango --release -- --fandango-file examples/even_numbers.fan
 ```
 
 ### Using it in a fuzzer
 
 There are four ways of running libafl_fandango_pyo3 in LibAFL: As a generator, as a pseudo-mutator, as a stage with post-mutators, and as an executor.
 
-- The generator is the obvious and ideomatic answer.
-- Using it as a pseudo-mutator is handy if you are building a mutational fuzzer anyway and just want to replace your mutator. Using it as a mutator will introduce a small performance benefit (running the scheduler, cloning the input to be mutated before it is immediately overwritten again, etc.), but compared to the overhead of running Python, I find this negligable. It also requires the corpus to not be empty (it needs to be primed) and a mutational stage to be created (make sure to only run one mutation to prevent unnecessary runtime).
+- The generator is the obvious and idiomatic answer.
+- Using it as a pseudo-mutator is handy if you are building a mutational fuzzer anyway and just want to replace your mutator. Using it as a mutator will introduce a small performance benefit (running the scheduler, cloning the input to be mutated before it is immediately overwritten again, etc.), but compared to the overhead of running Python, I find this negligible. It also requires the corpus to not be empty (it needs to be primed) and a mutational stage to be created (make sure to only run one mutation to prevent unnecessary runtime).
 - You can also use the provided stage, which will randomly generate an input with Fandango, evaluate it, and then mutate it using any other mutator(s), such as havoc_mutations.
 - The executor can be used for differential fuzzing of any fuzzer built in LibAFL against a Fandango spec. Imagine you are testing a parser. You can write your harness in a way that writes to an observer if the input is deemed to be correct. Then you set up your fuzzer to use a parallel executor with Fandango's executor and compare the output of your harness with Fandango's opinion on whether the input is legal or not.
 
 There are four example fuzzers: [baby_fuzzer_generator](./examples/baby_fuzzer_generator.rs), [baby_fuzzer_mutator](./examples/baby_fuzzer_mutator.rs), [baby_fuzzer_stage](./examples/baby_fuzzer_stage.rs), and [baby_fuzzer_differential](./examples/baby_fuzzer_differential.rs). The target for all four is an in-process function that parses the input to a string and then a number and checks if it is even. For the first three, it will consider any number that does not fit into 128 bits as a crash and thus produce a list of crashes after some time (in the crashes directory). They can be run with the following:
 
 ```bash
-cargo run --example baby_fuzzer_generator --release
+cargo run --example baby_fuzzer_generator --release # using FandangoSubprocessModule
 cargo run --example baby_fuzzer_mutator --release
 cargo run --example baby_fuzzer_stage --release
 cargo run --example baby_fuzzer_differential --release
 ```
 
 ## Known issues
-For some reason, PyO3 struggles with matching the python interpreter to the one used in the shell – specifically when it comes to imports of dependencies. You may need to manually set the python path environment variable:
+
+For some reason, PyO3 struggles with matching the Python interpreter to the one used in the shell—specifically when it comes to imports of dependencies. You may need to manually set the Python path environment variable:
 
 ```bash
 export PYTHONPATH=$(echo .venv/lib/python*/site-packages)

@@ -1,18 +1,18 @@
 use libafl::{Error, generators::Generator, inputs::BytesInput};
 
-use crate::fandango::FandangoPythonModule;
+use crate::fandango::FandangoClient;
 
-pub struct FandangoGenerator {
-    fandango: FandangoPythonModule,
+pub struct FandangoGenerator<F> {
+    fandango: F,
 }
 
-impl FandangoGenerator {
-    pub fn new(fandango: FandangoPythonModule) -> Self {
+impl<F> FandangoGenerator<F> {
+    pub fn new(fandango: F) -> Self {
         Self { fandango }
     }
 }
 
-impl<S> Generator<BytesInput, S> for FandangoGenerator {
+impl<F: FandangoClient, S> Generator<BytesInput, S> for FandangoGenerator<F> {
     fn generate(&mut self, _state: &mut S) -> Result<BytesInput, Error> {
         let input = self
             .fandango

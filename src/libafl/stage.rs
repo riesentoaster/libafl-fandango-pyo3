@@ -10,30 +10,25 @@ use libafl::{
 };
 use libafl_bolts::{Named, rands::Rand as _};
 
-use crate::fandango::FandangoPythonModule;
+use crate::fandango::FandangoClient;
 
-pub struct FandangoPostMutationalStage<M> {
-    fandango: FandangoPythonModule,
+pub struct FandangoPostMutationalStage<F, M> {
+    fandango: F,
     mutators: M,
     min_iterations: usize,
     max_iterations: usize,
 }
 
-impl<M> FandangoPostMutationalStage<M> {
+impl<F, M> FandangoPostMutationalStage<F, M> {
     /// Create a new FandangoPostMutationalStage
     ///
     /// # Arguments
     ///
-    /// * `fandango` - The FandangoPythonModule to use
+    /// * `fandango` - A [`FandangoClient`] (e.g. [`crate::fandango::FandangoPythonModule`] or [`crate::FandangoSubprocess`])
     /// * `mutators` - The mutators to use
     /// * `min_iterations` - The minimum number of iterations to run for each generated input (inclusive)
     /// * `max_iterations` - The maximum number of iterations to run for each generated input (inclusive)
-    pub fn new(
-        fandango: FandangoPythonModule,
-        mutators: M,
-        min_iterations: usize,
-        max_iterations: usize,
-    ) -> Self {
+    pub fn new(fandango: F, mutators: M, min_iterations: usize, max_iterations: usize) -> Self {
         Self {
             fandango,
             mutators,
@@ -43,11 +38,12 @@ impl<M> FandangoPostMutationalStage<M> {
     }
 }
 
-impl<E, EM, M, S, Z> Stage<E, EM, S, Z> for FandangoPostMutationalStage<M>
+impl<E, EM, F, M, S, Z> Stage<E, EM, S, Z> for FandangoPostMutationalStage<F, M>
 where
     Z: Evaluator<E, EM, BytesInput, S>,
     M: Mutator<BytesInput, S>,
     S: HasRand,
+    F: FandangoClient,
 {
     fn perform(
         &mut self,
@@ -86,13 +82,13 @@ where
     }
 }
 
-impl<M> Named for FandangoPostMutationalStage<M> {
+impl<F, M> Named for FandangoPostMutationalStage<F, M> {
     fn name(&self) -> &Cow<'static, str> {
         &Cow::Borrowed("FandangoPostMutationalStage")
     }
 }
 
-impl<M, S> Restartable<S> for FandangoPostMutationalStage<M>
+impl<F, M, S> Restartable<S> for FandangoPostMutationalStage<F, M>
 where
     S: HasNamedMetadata + HasCurrentCorpusId,
 {

@@ -21,7 +21,7 @@ use libafl_bolts::{
     shmem::{ShMemProvider, StdShMemProvider},
 };
 use libafl_fandango_pyo3::{
-    fandango::{FandangoPythonModule, FandangoPythonModuleInitError},
+    fandango::{FandangoModuleInitError, FandangoSubprocessModule},
     libafl::FandangoGenerator,
 };
 
@@ -72,8 +72,8 @@ fn run() -> Result<(), String> {
     let shmem_provider = StdShMemProvider::new().expect("Failed to init shared memory");
 
     // Generate one Generator to ensure the interpreter is ready
-    if let Err(FandangoPythonModuleInitError::ModuleNotFoundError(e, tb)) =
-        FandangoPythonModule::new(&args.fandango_file, &[])
+    if let Err(FandangoModuleInitError::ModuleNotFoundError(e, tb)) =
+        FandangoSubprocessModule::new(&args.fandango_file, &[])
     {
         return Err(format!(
             "A required Python module was not found. You may need to set the PYTHONPATH environment variable to the path of the Python interpreter, e.g. `export PYTHONPATH=$(echo .venv/lib/python*/site-packages)`. Underlying error:\n{}\n{}",
@@ -86,8 +86,9 @@ fn run() -> Result<(), String> {
                           _client_description| {
         log::info!("Running client");
 
-        let mut generator =
-            FandangoGenerator::new(FandangoPythonModule::new(&args.fandango_file, &[]).unwrap());
+        let mut generator = FandangoGenerator::new(
+            FandangoSubprocessModule::new(&args.fandango_file, &[]).unwrap(),
+        );
 
         let mut objective = CrashFeedback::new();
 
