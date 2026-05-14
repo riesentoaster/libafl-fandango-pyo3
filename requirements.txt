@@ -1,1 +1,1 @@
-fandango-fuzzer>=1.0.6
+fandango-fuzzer>=1.1.1
