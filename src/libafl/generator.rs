@@ -17,7 +17,7 @@ impl<F: FandangoClient, S> Generator<BytesInput, S> for FandangoGenerator<F> {
         let input = self
             .fandango
             .next_input()
-            .map_err(|e| Error::illegal_state(e.to_string()))?;
+            .map_err(|e| Error::illegal_state(format!("Fandango error: {e}")))?;
         Ok(input.into())
     }
 }

@@ -25,7 +25,7 @@ impl<F: FandangoClient, S> Mutator<BytesInput, S> for FandangoPseudoMutator<F> {
         let new_input = self
             .fandango
             .next_input()
-            .map_err(|e| Error::illegal_state(e.to_string()))?;
+            .map_err(|e| Error::illegal_state(format!("Fandango error: {e}")))?;
         *input = BytesInput::new(new_input);
         Ok(MutationResult::Mutated)
     }

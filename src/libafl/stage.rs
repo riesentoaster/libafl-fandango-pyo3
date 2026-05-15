@@ -55,7 +55,7 @@ where
         let input: ValueInput<Vec<u8>> = self
             .fandango
             .next_input()
-            .map_err(|e| Error::illegal_state(e.to_string()))?
+            .map_err(|e| Error::illegal_state(format!("Fandango error: {e}")))?
             .into();
 
         let iterations = 1 + state

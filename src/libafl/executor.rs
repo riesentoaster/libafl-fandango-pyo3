@@ -43,7 +43,7 @@ where
         let num_parses = self
             .fandango
             .parse_input(&input.target_bytes())
-            .map_err(|e| Error::illegal_state(e.to_string()))?;
+            .map_err(|e| Error::illegal_state(format!("Fandango error: {e}")))?;
 
         self.observers
             .get_mut(&self.num_parses_observer)
